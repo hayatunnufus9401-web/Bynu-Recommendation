@@ -1,10 +1,10 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Pastikan API Key tersedia
+// Pastikan API Key tersedia secara aman
 const getAiInstance = () => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === "undefined") {
+  if (!apiKey || apiKey === "" || apiKey === "undefined") {
     throw new Error("API_KEY_MISSING");
   }
   return new GoogleGenAI({ apiKey });
