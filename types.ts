@@ -30,6 +30,14 @@ export interface SiteSettings {
   customCss?: string;
   telegramBotToken?: string;
   telegramChatId?: string;
+  // Added missing properties
+  ownerPassword?: string;
+  maintenanceMode?: boolean;
+  socialLinks?: {
+    telegram: string;
+    whatsapp: string;
+    instagram: string;
+  };
   features: {
     showPrice: boolean;
     showCategories: boolean;

@@ -33,11 +33,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [showToast, setShowToast] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Local category input
+  // Local states
   const [newCatInput, setNewCatInput] = useState('');
-
-  // AI State
   const [aiPrompt, setAiPrompt] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [socialInputs, setSocialInputs] = useState(settings.socialLinks || { telegram: '', whatsapp: '', instagram: '' });
+  const [teleBotToken, setTeleBotToken] = useState(settings.telegramBotToken || '');
+  const [teleChatId, setTeleChatId] = useState(settings.telegramChatId || '');
 
   // Form States
   const [formData, setFormData] = useState({ name: '', price: '', imageUrl: '', affiliateLink: '', category: categories[0] || '', shortDescription: '' });
@@ -116,9 +118,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const handleManualDeleteCategory = (catToDelete: string) => {
-    if (confirm(`Yakin mau hapus kategori "${catToDelete}"? Produk di kategori ini nggak akan hilang, cuma kategorinya aja yang dihapus.`)) {
+    if (confirm(`Yakin mau hapus kategori "${catToDelete}"? Produk di kategori ini nggak akan hilang.`)) {
       const updated = categories.filter(c => c !== catToDelete);
       onUpdateCategories(updated);
+    }
+  };
+
+  const handleChangePassword = () => {
+    if (!newPassword || newPassword.length < 4) {
+      alert("Password minimal 4 karakter ya, Babe! ✨");
+      return;
+    }
+    onUpdateSettings({ ...settings, ownerPassword: newPassword });
+    setNewPassword('');
+    alert("Password Magic Key berhasil diganti! 🔑");
+  };
+
+  const handleSaveSocials = () => {
+    onUpdateSettings({ ...settings, socialLinks: socialInputs });
+    alert("Social links berhasil diupdate! 🌸");
+  };
+
+  const handleSaveTeleBot = () => {
+    onUpdateSettings({ ...settings, telegramBotToken: teleBotToken, telegramChatId: teleChatId });
+    alert("Konfigurasi Bot Telegram berhasil disimpan! 🤖");
+  };
+
+  const handleResetData = () => {
+    if (confirm("⚠️ PERINGATAN KERAS! Ini bakal hapus SEMUA produk, blog, dan settingan kamu. Web bakal kembali ke nol. Kamu yakin banget?")) {
+      localStorage.removeItem('bynu_site_state_v3');
+      window.location.reload();
     }
   };
 
@@ -174,7 +203,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
               </div>
 
-              {/* Image Selection Section */}
               <div className="space-y-4">
                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Foto Produk</label>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -263,6 +291,101 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
            </div>
         </div>
       )}
+
+      {activeTab === 'system' && (
+        <div className="space-y-10 animate-in slide-in-from-right-4 pb-20">
+          {/* Maintenance Mode Toggle */}
+          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm flex items-center justify-between">
+            <div>
+              <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-1">Maintenance Mode 😴</h4>
+              <p className="text-slate-400 text-[10px] font-bold">Aktifkan untuk menyembunyikan web sementara.</p>
+            </div>
+            <button 
+              onClick={() => onUpdateSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
+              className={`w-16 h-8 rounded-full transition-all relative ${settings.maintenanceMode ? 'bg-pink-500' : 'bg-slate-200'}`}
+            >
+              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${settings.maintenanceMode ? 'left-9' : 'left-1'}`}></div>
+            </button>
+          </div>
+
+          {/* Manual Category Management */}
+          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Manual Category Manager 📁</h4>
+            <div className="flex flex-wrap gap-3 mb-8">
+              {categories.map(cat => (
+                <div key={cat} className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-50 border border-slate-100 text-sm font-bold text-slate-600">
+                  <span>{cat}</span>
+                  <button onClick={() => handleManualDeleteCategory(cat)} className="text-red-300 hover:text-red-500 transition-colors">🗑️</button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <input value={newCatInput} onChange={e => setNewCatInput(e.target.value)} className="flex-1 rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold outline-none" placeholder="Nama kategori baru..." onKeyDown={e => e.key === 'Enter' && handleManualAddCategory()} />
+              <button onClick={handleManualAddCategory} className="px-8 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black transition-all">ADD ➕</button>
+            </div>
+          </div>
+
+          {/* Social Links Manager */}
+          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Social Links Manager 📸</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Telegram URL</label>
+                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={socialInputs.telegram} onChange={e => setSocialInputs({...socialInputs, telegram: e.target.value})} placeholder="https://t.me/..." />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">WhatsApp Link</label>
+                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={socialInputs.whatsapp} onChange={e => setSocialInputs({...socialInputs, whatsapp: e.target.value})} placeholder="https://wa.me/..." />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Instagram URL</label>
+                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={socialInputs.instagram} onChange={e => setSocialInputs({...socialInputs, instagram: e.target.value})} placeholder="https://instagram.com/..." />
+               </div>
+            </div>
+            <button onClick={handleSaveSocials} className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest">Update Social Links ✨</button>
+          </div>
+
+          {/* Telegram Auto-Post Bot Section */}
+          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Telegram Auto-Post Bot 🤖</h4>
+            <div className="grid grid-cols-1 gap-6 mb-8">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Telegram Bot Token</label>
+                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={teleBotToken} onChange={e => setTeleBotToken(e.target.value)} placeholder="000000000:AAxxxxxxxxx..." />
+               </div>
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Telegram Chat ID</label>
+                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={teleChatId} onChange={e => setTeleChatId(e.target.value)} placeholder="-100xxxxxxxxxx" />
+               </div>
+            </div>
+            <button onClick={handleSaveTeleBot} className="w-full py-4 rounded-2xl bg-indigo-500 text-white font-black text-xs uppercase tracking-widest shadow-lg">Save Bot Config 🤖</button>
+          </div>
+
+          {/* Security Section */}
+          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Security (Magic Key) 🔑</h4>
+            <div className="flex gap-3">
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="flex-1 rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold outline-none" placeholder="Masukkan password baru..." />
+              <button onClick={handleChangePassword} className="px-8 rounded-2xl bg-indigo-500 text-white font-black text-xs uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-all">CHANGE 🔑</button>
+            </div>
+          </div>
+
+          {/* Backup Section */}
+          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
+            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Backup & Data 🛡️</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button onClick={handleExportData} className="py-4 rounded-xl border-2 border-slate-900 font-black text-xs uppercase tracking-widest hover:bg-slate-50">Download Backup</button>
+              <button onClick={handleCopyJson} className="py-4 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest shadow-lg">Copy JSON</button>
+            </div>
+          </div>
+
+          {/* Danger Zone */}
+          <div className="bg-red-50 p-8 rounded-[3rem] border-2 border-red-100 shadow-sm">
+            <h4 className="font-black text-red-500 text-sm uppercase tracking-widest mb-6">Danger Zone ⚠️</h4>
+            <button onClick={handleResetData} className="w-full py-5 rounded-2xl bg-red-500 text-white font-black text-xs uppercase tracking-widest shadow-lg hover:bg-red-600 transition-all">Factory Reset (Hapus Semua) 🧨</button>
+          </div>
+        </div>
+      )}
       
       {activeTab === 'design' && (
         <div className="space-y-6 animate-in slide-in-from-right-4">
@@ -286,48 +409,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                <input type="color" className="w-full h-14 rounded-xl cursor-pointer" value={settings.backgroundColor} onChange={e => onUpdateSettings({...settings, backgroundColor: e.target.value})} />
              </div>
            </div>
-        </div>
-      )}
-
-      {activeTab === 'system' && (
-        <div className="space-y-10 animate-in slide-in-from-right-4">
-          {/* Manual Category Management */}
-          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
-            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Manual Category Manager 📁</h4>
-            
-            <div className="flex flex-wrap gap-3 mb-8">
-              {categories.map(cat => (
-                <div key={cat} className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-50 border border-slate-100 text-sm font-bold text-slate-600">
-                  <span>{cat}</span>
-                  <button onClick={() => handleManualDeleteCategory(cat)} className="text-red-300 hover:text-red-500 transition-colors">🗑️</button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <input 
-                value={newCatInput} 
-                onChange={e => setNewCatInput(e.target.value)} 
-                className="flex-1 rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold outline-none" 
-                placeholder="Nama kategori baru..." 
-                onKeyDown={e => e.key === 'Enter' && handleManualAddCategory()}
-              />
-              <button 
-                onClick={handleManualAddCategory}
-                className="px-8 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-black transition-all"
-              >
-                ADD ➕
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
-            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Backup & Export Data 🛡️</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={handleExportData} className="py-4 rounded-xl border-2 border-slate-900 font-black text-xs uppercase tracking-widest hover:bg-slate-50">Download Backup File</button>
-              <button onClick={handleCopyJson} className="py-4 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest shadow-lg">Copy Full Data JSON</button>
-            </div>
-          </div>
         </div>
       )}
 
