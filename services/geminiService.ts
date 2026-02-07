@@ -58,18 +58,17 @@ export const askAiAssistant = async (userRequest: string, currentState: any) => 
     - Categories: ${JSON.stringify(currentState.categories)}
 
     INSTRUCTIONS:
-    1. If Bynu wants to change/add categories, you MUST return the NEW FULL ARRAY in "categoryUpdate". 
-       Example: If adding "Makeup", return ALL old categories + "Makeup".
-    2. If Bynu wants to change colors or titles, you MUST return the new strings in "primaryColor", "siteName", etc.
-    3. Your "textResponse" should be very short and bubbly (max 2 sentences).
+    1. If the request is about categories (adding, changing), return ALL resulting categories in "categoryUpdate".
+    2. If it's about colors, return new "primaryColor" or "backgroundColor".
+    3. If it's about site name, return "siteName".
+    4. Keep "textResponse" bubbly, short, and confirming what you changed.
     
-    BEWARE: Do NOT say "I have enabled a module" without returning the "categoryUpdate" data. 
-    IF YOU DON'T RETURN "categoryUpdate", THE CATEGORIES WON'T CHANGE.
+    IMPORTANT: You must ALWAYS return a valid JSON.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview", // Use Pro for better data mapping
+      model: "gemini-3-flash-preview", // Changed to flash for better stability in quick JSON responses
       contents: [{ parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
@@ -84,16 +83,16 @@ export const askAiAssistant = async (userRequest: string, currentState: any) => 
             categoryUpdate: { 
               type: Type.ARRAY, 
               items: { type: Type.STRING } 
-            },
-            customCssUpdate: { type: Type.STRING }
+            }
           },
           required: ["textResponse"]
         }
       },
     });
-    return JSON.parse(response.text || "{}");
+    const result = JSON.parse(response.text || "{}");
+    return result;
   } catch (error) {
     console.error("Architect AI Error:", error);
-    throw error;
+    throw new Error("Maaf Babe, AI lagi pusing. Coba cek API Key di Vercel atau perjelas perintahnya ya! ✨");
   }
 };
