@@ -50,7 +50,8 @@ const SeoEngine: React.FC<SeoEngineProps> = ({ title, description, image, produc
         "@context": "https://schema.org/",
         "@type": "Product",
         "name": product.name,
-        "image": [product.imageUrl],
+        // Fix: Use imageUrls instead of imageUrl to match Product interface
+        "image": product.imageUrls,
         "description": product.description,
         "brand": { "@type": "Brand", "name": "Bynu's Choice" },
         "offers": {

@@ -4,7 +4,7 @@ export interface Product {
   name: string;
   description: string;
   price: string;
-  imageUrl: string;
+  imageUrls: string[]; // Diubah menjadi array
   affiliateLink: string;
   category: string;
   createdAt: number;
@@ -30,7 +30,6 @@ export interface SiteSettings {
   customCss?: string;
   telegramBotToken?: string;
   telegramChatId?: string;
-  // Added missing properties
   ownerPassword?: string;
   maintenanceMode?: boolean;
   socialLinks?: {

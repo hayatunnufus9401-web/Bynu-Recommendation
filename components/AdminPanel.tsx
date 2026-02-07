@@ -42,34 +42,63 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [teleChatId, setTeleChatId] = useState(settings.telegramChatId || '');
 
   // Form States
-  const [formData, setFormData] = useState({ name: '', price: '', imageUrl: '', affiliateLink: '', category: categories[0] || '', shortDescription: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    price: '', 
+    imageUrls: [] as string[], 
+    urlInput: '',
+    affiliateLink: '', 
+    category: categories[0] || '', 
+    shortDescription: '' 
+  });
   const [blogData, setBlogData] = useState({ title: '', excerpt: '', content: '' });
 
   useEffect(() => {
     if (editingProduct) {
       setFormData({
         name: editingProduct.name, price: editingProduct.price,
-        imageUrl: editingProduct.imageUrl, affiliateLink: editingProduct.affiliateLink,
+        imageUrls: editingProduct.imageUrls || [], urlInput: '',
+        affiliateLink: editingProduct.affiliateLink,
         category: editingProduct.category, shortDescription: editingProduct.description || ''
       });
       setActiveTab('products');
-      setImageMode(editingProduct.imageUrl.startsWith('data:') ? 'file' : 'url');
     }
   }, [editingProduct]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Kegedean Babe! Maksimal 2MB ya. ✨");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, imageUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+    const files = e.target.files;
+    if (files) {
+      Array.from(files).forEach(file => {
+        if (file.size > 2 * 1024 * 1024) {
+          alert(`File "${file.name}" kegedean Babe! Maksimal 2MB ya. ✨`);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData(prev => ({ ...prev, imageUrls: [...prev.imageUrls, reader.result as string] }));
+        };
+        reader.readAsDataURL(file);
+      });
     }
+    // Reset input agar bisa pilih file yang sama lagi
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const addUrlImage = () => {
+    if (formData.urlInput.trim()) {
+      setFormData(prev => ({ 
+        ...prev, 
+        imageUrls: [...prev.imageUrls, prev.urlInput.trim()],
+        urlInput: '' 
+      }));
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrls: prev.imageUrls.filter((_, i) => i !== index)
+    }));
   };
 
   const handleAiAction = async () => {
@@ -151,6 +180,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  const currentUrl = window.location.origin + window.location.pathname;
+
   return (
     <div className="bg-white rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] p-8 md:p-14 max-w-5xl mx-auto border-4 border-slate-50 relative overflow-hidden">
       {showToast && (
@@ -177,7 +208,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         <div className="animate-in fade-in duration-300">
            <form onSubmit={async (e) => {
              e.preventDefault();
-             if (!formData.imageUrl) { alert("Masukin fotonya dulu ya! 📸"); return; }
+             if (formData.imageUrls.length === 0) { alert("Masukin minimal satu foto dulu ya! 📸"); return; }
              setLoading(true);
              try {
                const aiRes = await generateProductContent(formData.name, formData.category);
@@ -204,33 +235,47 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Foto Produk</label>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
-                      <button type="button" onClick={() => setImageMode('url')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${imageMode === 'url' ? 'bg-white shadow-sm' : 'text-slate-400'}`}>URL Website</button>
-                      <button type="button" onClick={() => setImageMode('file')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${imageMode === 'file' ? 'bg-white shadow-sm' : 'text-slate-400'}`}>Upload File</button>
-                    </div>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Foto Produk (Bisa banyak! ✨)</label>
+                <div className="space-y-6">
+                  <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
+                    <button type="button" onClick={() => setImageMode('url')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${imageMode === 'url' ? 'bg-white shadow-sm' : 'text-slate-400'}`}>URL Website</button>
+                    <button type="button" onClick={() => setImageMode('file')} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${imageMode === 'file' ? 'bg-white shadow-sm' : 'text-slate-400'}`}>Upload File</button>
+                  </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {imageMode === 'url' ? (
-                      <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" placeholder="Paste link gambar di sini..." value={formData.imageUrl.startsWith('data:') ? '' : formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+                      <div className="flex gap-2">
+                        <input className="flex-1 rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" placeholder="Paste link gambar..." value={formData.urlInput} onChange={e => setFormData({...formData, urlInput: e.target.value})} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addUrlImage())} />
+                        <button type="button" onClick={addUrlImage} className="px-6 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase">Add</button>
+                      </div>
                     ) : (
                       <div className="relative">
-                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full py-6 rounded-2xl border-4 border-dashed border-slate-100 text-slate-400 font-black hover:border-pink-200 hover:text-pink-400 transition-all flex flex-col items-center justify-center gap-2 group">
-                          <span className="text-2xl group-hover:scale-125 transition-transform">📸</span>
-                          <span className="text-[10px] uppercase tracking-widest">Pilih dari Galeri</span>
+                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" multiple className="hidden" />
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full py-4 rounded-2xl border-4 border-dashed border-slate-100 text-slate-400 font-black hover:border-pink-200 hover:text-pink-400 transition-all flex flex-col items-center justify-center gap-1 group">
+                          <span className="text-xl group-hover:scale-125 transition-transform">📸</span>
+                          <span className="text-[10px] uppercase tracking-widest">Pilih Gambar (Banyak)</span>
                         </button>
                       </div>
                     )}
                   </div>
-                  <div className="relative group border-4 border-slate-50 rounded-[2.5rem] bg-slate-50 min-h-[160px] flex items-center justify-center overflow-hidden shadow-inner">
-                    {formData.imageUrl ? (
-                      <img src={formData.imageUrl} className="w-full h-full object-cover animate-in fade-in zoom-in-95" alt="Preview" />
-                    ) : (
-                      <div className="text-center">
-                        <div className="text-3xl opacity-20 mb-2">🖼️</div>
-                        <span className="text-slate-300 font-black uppercase text-[10px] tracking-widest">Preview Gambar</span>
+
+                  {/* Previews Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                    {formData.imageUrls.map((url, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group">
+                        <img src={url} className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => removeImage(idx)} 
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {formData.imageUrls.length === 0 && (
+                      <div className="col-span-full py-10 text-center border-2 border-dashed border-slate-50 rounded-[2rem] text-slate-300 font-black uppercase text-[10px] tracking-widest">
+                        Belum ada foto terpilih... 🖼️
                       </div>
                     )}
                   </div>
@@ -255,6 +300,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
+      {/* ... (Tab AI, SYSTEM, DESIGN tetap sama) */}
       {activeTab === 'ai' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4">
            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
@@ -294,7 +340,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {activeTab === 'system' && (
         <div className="space-y-10 animate-in slide-in-from-right-4 pb-20">
-          {/* Maintenance Mode Toggle */}
+          <div className="bg-pink-50 p-8 rounded-[3rem] border-2 border-pink-100 shadow-sm">
+            <h4 className="font-black text-pink-500 text-sm uppercase tracking-widest mb-4">Share Center 🍓</h4>
+            <p className="text-slate-500 text-xs mb-6 font-medium leading-relaxed">
+              Babe, kalau link kamu minta login Vercel, masuk ke <b>Vercel Dashboard > Settings > Deployment Protection</b> lalu matikan <b>"Vercel Authentication"</b> ya! ✨
+            </p>
+            <div className="bg-white rounded-2xl p-4 flex items-center justify-between border border-pink-100 gap-4">
+              <span className="text-[10px] font-bold text-slate-400 truncate">{currentUrl}</span>
+              <button 
+                onClick={() => { navigator.clipboard.writeText(currentUrl); alert("Link website kamu berhasil disalin! 🍓"); }}
+                className="px-4 py-2 bg-pink-500 text-white text-[10px] font-black rounded-lg uppercase whitespace-nowrap"
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-1">Maintenance Mode 😴</h4>
@@ -308,7 +369,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </button>
           </div>
 
-          {/* Manual Category Management */}
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
             <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Manual Category Manager 📁</h4>
             <div className="flex flex-wrap gap-3 mb-8">
@@ -325,7 +385,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
 
-          {/* Social Links Manager */}
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
             <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Social Links Manager 📸</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -345,7 +404,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <button onClick={handleSaveSocials} className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest">Update Social Links ✨</button>
           </div>
 
-          {/* Telegram Auto-Post Bot Section */}
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
             <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Telegram Auto-Post Bot 🤖</h4>
             <div className="grid grid-cols-1 gap-6 mb-8">
@@ -361,7 +419,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             <button onClick={handleSaveTeleBot} className="w-full py-4 rounded-2xl bg-indigo-500 text-white font-black text-xs uppercase tracking-widest shadow-lg">Save Bot Config 🤖</button>
           </div>
 
-          {/* Security Section */}
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
             <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Security (Magic Key) 🔑</h4>
             <div className="flex gap-3">
@@ -370,7 +427,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
 
-          {/* Backup Section */}
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
             <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Backup & Data 🛡️</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -379,7 +435,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           </div>
 
-          {/* Danger Zone */}
           <div className="bg-red-50 p-8 rounded-[3rem] border-2 border-red-100 shadow-sm">
             <h4 className="font-black text-red-500 text-sm uppercase tracking-widest mb-6">Danger Zone ⚠️</h4>
             <button onClick={handleResetData} className="w-full py-5 rounded-2xl bg-red-500 text-white font-black text-xs uppercase tracking-widest shadow-lg hover:bg-red-600 transition-all">Factory Reset (Hapus Semua) 🧨</button>
@@ -428,13 +483,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <button onClick={() => setReviewMode(false)} className="flex-1 py-5 rounded-2xl bg-slate-100 font-black uppercase tracking-widest text-xs">Cancel</button>
               <button disabled={isPublishing} onClick={async () => {
                 setIsPublishing(true);
-                const p: Product = { id: crypto.randomUUID(), ...formData, description: formData.shortDescription, createdAt: Date.now() };
+                const p: Product = { 
+                  id: crypto.randomUUID(), 
+                  name: formData.name,
+                  price: formData.price,
+                  imageUrls: formData.imageUrls,
+                  affiliateLink: formData.affiliateLink,
+                  category: formData.category,
+                  description: formData.shortDescription, 
+                  createdAt: Date.now() 
+                };
                 onAddProduct(p, blogData);
                 setIsPublishing(false);
                 setReviewMode(false);
                 setShowToast(true);
                 setTimeout(() => setShowToast(false), 5000);
-                setFormData({ name: '', price: '', imageUrl: '', affiliateLink: '', category: categories[0] || '', shortDescription: '' });
+                setFormData({ name: '', price: '', imageUrls: [], urlInput: '', affiliateLink: '', category: categories[0] || '', shortDescription: '' });
               }} className="flex-[2] py-5 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-sm shadow-2xl">
                 {isPublishing ? 'Publishing... ✨' : 'Confirm & Publish ✨'}
               </button>

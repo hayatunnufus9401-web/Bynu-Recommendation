@@ -12,6 +12,10 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, isAdmin, showPrice, onEdit, onDelete, onViewBlog }) => {
+  const displayImage = product.imageUrls && product.imageUrls.length > 0 
+    ? product.imageUrls[0] 
+    : 'https://via.placeholder.com/400?text=No+Image';
+
   return (
     <div className="group bg-white rounded-[3rem] overflow-hidden border border-[#FFD6E0]/30 hover:shadow-[0_30px_60px_-15px_rgba(255,133,161,0.2)] transition-all duration-700 flex flex-col h-full transform hover:-translate-y-2 relative">
       {isAdmin && (
@@ -35,10 +39,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isAdmin, showPrice, 
       
       <div className="relative aspect-[1/1] overflow-hidden">
         <img
-          src={product.imageUrl}
+          src={displayImage}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
         />
+        {product.imageUrls && product.imageUrls.length > 1 && (
+          <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white">
+            +{product.imageUrls.length - 1} More Photos
+          </div>
+        )}
         {showPrice && (
           <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-md px-5 py-2 rounded-2xl text-sm font-black shadow-lg text-slate-800">
             {product.price}

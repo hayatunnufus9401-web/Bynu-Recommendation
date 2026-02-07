@@ -39,7 +39,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Kawaii Mechanical Keyboard',
     description: 'Typing feels like clouds with these soft switches and pastel milk colors.',
     price: '$129.00',
-    imageUrl: 'https://images.unsplash.com/photo-1595225476474-87563907a212?q=80&w=800&auto=format&fit=crop',
+    imageUrls: ['https://images.unsplash.com/photo-1595225476474-87563907a212?q=80&w=800&auto=format&fit=crop'],
     affiliateLink: 'https://example.com',
     category: 'Tech ✨',
     createdAt: Date.now() - 100000
@@ -179,7 +179,6 @@ const App: React.FC = () => {
     localStorage.setItem('bynu_site_state_v3', JSON.stringify(state));
     document.body.style.backgroundColor = state.settings.backgroundColor;
     
-    // Inject Custom CSS Engine
     const existingStyle = document.getElementById('bynu-custom-css');
     if (existingStyle) existingStyle.remove();
     if (state.settings.customCss) {
@@ -210,7 +209,6 @@ const App: React.FC = () => {
     const newBlog: BlogPost = { id: crypto.randomUUID(), productId: product.id, title: blogContent.title, content: blogContent.content, excerpt: blogContent.excerpt, createdAt: Date.now() };
     setState(prev => ({ ...prev, products: [product, ...prev.products], blogs: [newBlog, ...prev.blogs] }));
     
-    // Auto-post to Telegram if configured
     if (state.settings.telegramBotToken && state.settings.telegramChatId) {
       const blogUrl = `${window.location.origin}${window.location.pathname}#/blog/${product.id}`;
       sendToTelegram(
@@ -270,37 +268,21 @@ const App: React.FC = () => {
           
           <div className="flex flex-wrap justify-center gap-4 mb-12 -mt-6">
             {state.settings.socialLinks?.telegram && (
-              <a 
-                href={state.settings.socialLinks.telegram} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-flex items-center gap-3 px-8 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md"
-              >
+              <a href={state.settings.socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md">
                 <span className="text-sm font-bold" style={{ color: state.settings.primaryColor }}>Join Telegram Bynu ✨</span>
               </a>
             )}
             {state.settings.socialLinks?.instagram && (
-              <a 
-                href={state.settings.socialLinks.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md"
-              >
+              <a href={state.settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md">
                 <span className="text-sm font-bold" style={{ color: state.settings.primaryColor }}>Instagram 📸</span>
               </a>
             )}
             {state.settings.socialLinks?.whatsapp && (
-              <a 
-                href={state.settings.socialLinks.whatsapp} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md"
-              >
+              <a href={state.settings.socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md">
                 <span className="text-sm font-bold" style={{ color: state.settings.primaryColor }}>WhatsApp 💬</span>
               </a>
             )}
           </div>
-
           <div className="text-slate-300 text-[10px] font-black uppercase tracking-widest">© 2024 BYNU'S RECOMMENDATION</div>
         </footer>
       </div>
@@ -315,11 +297,7 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
 
   const filteredProducts = useMemo(() => {
     let result = state.products;
-
-    if (selectedCat !== 'All') {
-      result = result.filter(p => p.category === selectedCat);
-    }
-
+    if (selectedCat !== 'All') result = result.filter(p => p.category === selectedCat);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(p => {
@@ -330,7 +308,6 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
         return nameMatch || descMatch || blogMatch;
       });
     }
-
     return result;
   }, [state.products, state.blogs, selectedCat, searchQuery]);
 
@@ -342,32 +319,12 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
           {state.settings.heroTitle.split(' ').slice(0, -1).join(' ')} <span style={{ color: state.settings.primaryColor }} className="italic">{state.settings.heroTitle.split(' ').pop()}</span>
         </h1>
         <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">{state.settings.heroSubtitle}</p>
-        
-        <SearchBar 
-          value={searchQuery} 
-          onChange={setSearchQuery} 
-          placeholder="Cari produk atau intip diary Bynu... ✨" 
-          primaryColor={state.settings.primaryColor} 
-        />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Cari produk atau intip diary Bynu... ✨" primaryColor={state.settings.primaryColor} />
       </section>
 
       {isAdmin && (
         <section className="mb-24">
-          <AdminPanel 
-            onAddProduct={props.onAddProduct} 
-            onUpdateProduct={props.onUpdateProduct}
-            editingProduct={editingProduct}
-            onCancelEdit={() => setEditingProduct(null)}
-            categories={state.categories}
-            onAddCategory={props.onAddCategory}
-            onUpdateCategories={props.onUpdateCategories}
-            settings={state.settings}
-            onUpdateSettings={props.onUpdateSettings}
-            onUpdateBlog={props.onUpdateBlog}
-            allBlogs={state.blogs}
-            fullState={state}
-            onImportState={props.onImportState}
-          />
+          <AdminPanel onAddProduct={props.onAddProduct} onUpdateProduct={props.onUpdateProduct} editingProduct={editingProduct} onCancelEdit={() => setEditingProduct(null)} categories={state.categories} onAddCategory={props.onAddCategory} onUpdateCategories={props.onUpdateCategories} settings={state.settings} onUpdateSettings={props.onUpdateSettings} onUpdateBlog={props.onUpdateBlog} allBlogs={state.blogs} fullState={state} onImportState={props.onImportState} />
         </section>
       )}
 
@@ -386,19 +343,11 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
         <div className="text-center py-24 px-10 bg-pink-50/50 backdrop-blur-md rounded-[5rem] border-4 border-dashed border-pink-100 shadow-2xl shadow-pink-100/30 group animate-in zoom-in-95 duration-1000">
           <div className="relative inline-block mb-10">
             <div className="absolute inset-0 bg-pink-300/20 rounded-full blur-3xl animate-pulse"></div>
-            <img 
-              src="https://img.freepik.com/free-vector/sad-cute-rabbit-cartoon-vector-icon-illustration-animal-nature-icon-concept-isolated_138676-2139.jpg" 
-              alt="Cute Pink Sad Rabbit" 
-              className="w-56 h-56 object-contain rounded-full bg-white p-6 shadow-2xl border-[10px] border-white transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-700 relative z-10"
-            />
+            <img src="https://img.freepik.com/free-vector/sad-cute-rabbit-cartoon-vector-icon-illustration-animal-nature-icon-concept-isolated_138676-2139.jpg" alt="Cute Pink Sad Rabbit" className="w-56 h-56 object-contain rounded-full bg-white p-6 shadow-2xl border-[10px] border-white transform group-hover:scale-110 group-hover:rotate-2 transition-all duration-700 relative z-10" />
             <div className="absolute -bottom-4 -right-4 bg-pink-100 w-16 h-16 rounded-full flex items-center justify-center shadow-xl text-3xl animate-bounce border-4 border-white z-20">🎀</div>
           </div>
-          <h3 className="text-3xl md:text-5xl font-serif font-bold text-pink-900/80 mb-6 tracking-tight leading-tight">
-            Yah, Bynu belum nemu nih...
-          </h3>
-          <p className="text-xl text-pink-400/80 font-semibold max-w-sm mx-auto leading-relaxed italic">
-            Coba cari pakai kata kunci lain ya, <span className="text-pink-500 font-black not-italic underline decoration-pink-200 underline-offset-8">Babe! ✨</span>
-          </p>
+          <h3 className="text-3xl md:text-5xl font-serif font-bold text-pink-900/80 mb-6 tracking-tight leading-tight">Yah, Bynu belum nemu nih...</h3>
+          <p className="text-xl text-pink-400/80 font-semibold max-w-sm mx-auto leading-relaxed italic">Coba cari pakai kata kunci lain ya, <span className="text-pink-500 font-black not-italic underline decoration-pink-200 underline-offset-8">Babe! ✨</span></p>
         </div>
       )}
     </main>
@@ -407,11 +356,11 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
 
 const BlogList: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: SiteSettings; searchQuery: string; setSearchQuery: (s: string) => void }> = ({ blogs, products, settings, searchQuery, setSearchQuery }) => {
   const navigate = useNavigate();
-
   const filteredBlogs = useMemo(() => {
-    if (!searchQuery.trim()) return blogs;
+    let activeBlogs = blogs.filter(blog => products.some(p => p.id === blog.productId));
+    if (!searchQuery.trim()) return activeBlogs;
     const q = searchQuery.toLowerCase();
-    return blogs.filter(blog => {
+    return activeBlogs.filter(blog => {
       const product = products.find(p => p.id === blog.productId);
       const titleMatch = blog.title.toLowerCase().includes(q);
       const contentMatch = blog.content.toLowerCase().includes(q);
@@ -426,12 +375,7 @@ const BlogList: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: Sit
       <div className="text-center mb-12">
         <h1 className="text-5xl font-black text-slate-900 mb-6">The Pink Diary 📖</h1>
         <p className="text-slate-400 font-medium mb-10">Stories behind every piece.</p>
-        <SearchBar 
-          value={searchQuery} 
-          onChange={setSearchQuery} 
-          placeholder="Cari di dalam diary... 🖊️" 
-          primaryColor={settings.primaryColor} 
-        />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Cari di dalam diary... 🖊️" primaryColor={settings.primaryColor} />
       </div>
 
       {filteredBlogs.length > 0 ? (
@@ -440,7 +384,7 @@ const BlogList: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: Sit
             const product = products.find(p => p.id === blog.productId);
             return (
               <div key={blog.id} onClick={() => navigate(`/blog/${blog.productId}`)} className="group bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 cursor-pointer border border-slate-50">
-                <div className="aspect-[16/10] overflow-hidden"><img src={product?.imageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /></div>
+                <div className="aspect-[16/10] overflow-hidden"><img src={product?.imageUrls[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /></div>
                 <div className="p-10">
                   <span className="text-xs font-black uppercase tracking-[0.2em] mb-4 block" style={{ color: settings.primaryColor }}>{product?.category}</span>
                   <h2 className="text-3xl font-black text-slate-800 mb-4 line-clamp-2">{blog.title}</h2>
@@ -451,8 +395,9 @@ const BlogList: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: Sit
           })}
         </div>
       ) : (
-        <div className="text-center py-20">
-          <h3 className="text-2xl font-black text-slate-300">Diary-nya belum ketemu... 📖</h3>
+        <div className="text-center py-24 px-10 bg-slate-50 rounded-[4rem] border-2 border-dashed border-slate-100">
+          <div className="text-6xl mb-6 opacity-20">📖</div>
+          <h3 className="text-2xl font-black text-slate-300">Diary-nya belum ketemu atau kosong...</h3>
         </div>
       )}
     </div>
@@ -461,27 +406,41 @@ const BlogList: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: Sit
 
 const BlogView: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: SiteSettings }> = ({ blogs, products, settings }) => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const blog = blogs.find(b => b.productId === id);
   const product = products.find(p => p.id === id);
-  if (!blog || !product) return <div className="text-center py-20">Oops! 🌸</div>;
+
+  if (!blog || !product) {
+    return (
+      <div className="container mx-auto px-6 py-40 text-center max-w-md">
+        <div className="text-8xl mb-8 animate-bounce">🌸</div>
+        <h2 className="text-3xl font-black text-slate-800 mb-4">Diary Tidak Ditemukan</h2>
+        <p className="text-slate-400 font-medium mb-12">Mungkin diary ini sudah Bynu hapus atau dipindah ke tempat lain, Babe. ✨</p>
+        <button onClick={() => navigate('/')} className="w-full py-5 bg-pink-500 text-white rounded-2xl font-black shadow-xl shadow-pink-100 uppercase tracking-widest hover:scale-105 transition-all">Balik ke Home Yuk!</button>
+      </div>
+    );
+  }
   
   return (
-    <div className="container mx-auto px-6 py-12 max-w-3xl">
-      <SeoEngine 
-        title={blog.title} 
-        description={blog.excerpt} 
-        image={product.imageUrl} 
-        product={product} 
-        blog={blog} 
-      />
-      <img src={product.imageUrl} className="w-full h-[450px] object-cover rounded-[3rem] shadow-2xl mb-12" />
-      <h1 className="text-5xl font-black mb-8 leading-tight">{blog.title}</h1>
-      <article className="prose max-w-none mb-16 text-slate-600 leading-relaxed text-lg">
-        {blog.content.split('\n').map((l, i) => <p key={i} className="mb-4">{l.replace(/#|\*|###/g, '')}</p>)}
+    <div className="container mx-auto px-6 py-12 max-w-4xl animate-in fade-in duration-700">
+      <SeoEngine title={blog.title} description={blog.excerpt} image={product.imageUrls[0]} product={product} blog={blog} />
+      
+      {/* Gallery Section */}
+      <div className="space-y-6 mb-12">
+        {product.imageUrls.map((url, idx) => (
+          <img key={idx} src={url} className="w-full object-cover rounded-[3rem] shadow-2xl" alt={`${product.name} view ${idx+1}`} />
+        ))}
+      </div>
+
+      <h1 className="text-4xl md:text-6xl font-black mb-8 leading-tight text-center">{blog.title}</h1>
+      
+      <article className="prose max-w-none mb-16 text-slate-600 leading-relaxed text-lg bg-white p-10 md:p-16 rounded-[3.5rem] shadow-sm border border-slate-50">
+        {blog.content.split('\n').map((l, i) => <p key={i} className="mb-6">{l.replace(/#|\*|###/g, '')}</p>)}
       </article>
-      <div className="rounded-[3rem] p-12 text-white text-center shadow-2xl" style={{ backgroundColor: settings.primaryColor }}>
-        <h2 className="text-3xl font-black mb-8">Want this? ✨</h2>
-        <a href={product.affiliateLink} target="_blank" className="inline-block bg-white text-slate-900 px-12 py-5 rounded-[2rem] font-black hover:scale-105 transition-all">Get it Now</a>
+
+      <div className="rounded-[3rem] p-8 md:p-16 text-white text-center shadow-2xl sticky bottom-10" style={{ backgroundColor: settings.primaryColor }}>
+        <h2 className="text-2xl md:text-3xl font-black mb-8">Suka Barangnya? ✨</h2>
+        <a href={product.affiliateLink} target="_blank" className="inline-block bg-white text-slate-900 px-12 py-5 rounded-[2rem] font-black hover:scale-110 transition-all shadow-lg text-lg">Beli Sekarang 🍓</a>
       </div>
     </div>
   );
