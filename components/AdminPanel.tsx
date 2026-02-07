@@ -300,7 +300,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {/* ... (Tab AI, SYSTEM, DESIGN tetap sama) */}
       {activeTab === 'ai' && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4">
            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
@@ -343,7 +342,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           <div className="bg-pink-50 p-8 rounded-[3rem] border-2 border-pink-100 shadow-sm">
             <h4 className="font-black text-pink-500 text-sm uppercase tracking-widest mb-4">Share Center 🍓</h4>
             <p className="text-slate-500 text-xs mb-6 font-medium leading-relaxed">
-              Babe, kalau link kamu minta login Vercel, masuk ke <b>Vercel Dashboard > Settings > Deployment Protection</b> lalu matikan <b>"Vercel Authentication"</b> ya! ✨
+              Babe, kalau link kamu minta login Vercel, masuk ke <b>Vercel Dashboard &gt; Settings &gt; Deployment Protection</b> lalu matikan <b>"Vercel Authentication"</b> ya! ✨
             </p>
             <div className="bg-white rounded-2xl p-4 flex items-center justify-between border border-pink-100 gap-4">
               <span className="text-[10px] font-bold text-slate-400 truncate">{currentUrl}</span>
