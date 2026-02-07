@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://bynu-recommendation.vercel.app/sitemap.xml

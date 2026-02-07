@@ -1,0 +1,9 @@
+
+{
+  "name": "Bynu's Recommendation - Premium Product Curator",
+  "description": "A sophisticated affiliate marketing platform with AI-generated persuasive blog content and automated category management.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
