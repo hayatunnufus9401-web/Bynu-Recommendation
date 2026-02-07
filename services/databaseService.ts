@@ -1,17 +1,19 @@
 
 import { AppState } from '../types';
 
-// Variabel ini diambil dari Environment Variables di Vercel
-const SB_URL = (window as any).process?.env?.SUPABASE_URL || '';
-const SB_KEY = (window as any).process?.env?.SUPABASE_ANON_KEY || '';
+// Mengambil variabel langsung agar Vite bisa menggantinya saat build
+const SB_URL = process.env.SUPABASE_URL || '';
+const SB_KEY = process.env.SUPABASE_ANON_KEY || '';
 const TABLE_URL = `${SB_URL}/rest/v1/site_data`;
 
 /**
  * Mengambil data terbaru dari Cloud Database.
- * Menggunakan baris tunggal dengan ID 1 sebagai penyimpan seluruh state website.
  */
 export const fetchCloudState = async (): Promise<AppState | null> => {
-  if (!SB_URL || !SB_KEY) return null;
+  if (!SB_URL || !SB_KEY) {
+    console.warn("Supabase URL atau Key belum diset!");
+    return null;
+  }
 
   try {
     const response = await fetch(`${TABLE_URL}?id=eq.1&select=content`, {
@@ -20,6 +22,12 @@ export const fetchCloudState = async (): Promise<AppState | null> => {
         'Authorization': `Bearer ${SB_KEY}`
       }
     });
+    
+    if (!response.ok) {
+      console.error("Database Response Error:", response.statusText);
+      return null;
+    }
+
     const data = await response.json();
     if (data && data[0]) {
       return data[0].content as AppState;
@@ -31,14 +39,13 @@ export const fetchCloudState = async (): Promise<AppState | null> => {
 };
 
 /**
- * Menyimpan/Update state website ke Cloud Database agar bisa dilihat semua orang.
+ * Menyimpan/Update state website ke Cloud Database.
  */
 export const saveCloudState = async (state: AppState) => {
   if (!SB_URL || !SB_KEY) return;
 
   try {
-    // Gunakan POST dengan header UPSERT agar otomatis update jika ID 1 sudah ada
-    await fetch(TABLE_URL, {
+    const response = await fetch(TABLE_URL, {
       method: 'POST',
       headers: {
         'apikey': SB_KEY,
@@ -51,6 +58,13 @@ export const saveCloudState = async (state: AppState) => {
         content: state
       })
     });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("Simpan ke Cloud Gagal:", err);
+    } else {
+      console.log("Cloud Sync Success! ✨");
+    }
   } catch (error) {
     console.error("Gagal sinkronisasi ke cloud:", error);
   }
