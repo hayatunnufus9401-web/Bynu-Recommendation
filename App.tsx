@@ -5,6 +5,7 @@ import { Product, BlogPost, AppState, SiteSettings } from './types';
 import AdminPanel from './components/AdminPanel';
 import ProductCard from './components/ProductCard';
 import SeoEngine from './components/SeoEngine';
+import { sendToTelegram } from './services/telegramService';
 
 const INITIAL_SETTINGS: SiteSettings = {
   logoUrl: '✨',
@@ -16,6 +17,8 @@ const INITIAL_SETTINGS: SiteSettings = {
   heroSubtitle: 'Welcome to my cozy corner! Here are all the lovely things I’ve found that I think you’ll adore. Happy browsing! 🍓',
   ownerPassword: '090401',
   maintenanceMode: false,
+  telegramBotToken: '8374171711:AAH_vE6esv1O54RzfhFsZ2b6kWUm-8dqHpo',
+  telegramChatId: '@Bynurecommendation',
   socialLinks: {
     telegram: 'https://t.me/Bynurecommendation',
     whatsapp: '',
@@ -206,6 +209,27 @@ const App: React.FC = () => {
   const addProduct = (product: Product, blogContent: { title: string, content: string, excerpt: string }) => {
     const newBlog: BlogPost = { id: crypto.randomUUID(), productId: product.id, title: blogContent.title, content: blogContent.content, excerpt: blogContent.excerpt, createdAt: Date.now() };
     setState(prev => ({ ...prev, products: [product, ...prev.products], blogs: [newBlog, ...prev.blogs] }));
+    
+    // Auto-post to Telegram if configured
+    if (state.settings.telegramBotToken && state.settings.telegramChatId) {
+      const blogUrl = `${window.location.origin}${window.location.pathname}#/blog/${product.id}`;
+      sendToTelegram(
+        state.settings.telegramBotToken,
+        state.settings.telegramChatId,
+        product,
+        blogUrl
+      );
+    }
+  };
+
+  const deleteProduct = (id: string) => {
+    if (confirm("Yakin mau hapus produk dan diary ini, Babe? ✨")) {
+      setState(prev => ({
+        ...prev,
+        products: prev.products.filter(p => p.id !== id),
+        blogs: prev.blogs.filter(b => b.productId !== id)
+      }));
+    }
   };
 
   const updateProduct = (updated: Product) => setState(prev => ({ ...prev, products: prev.products.map(p => p.id === updated.id ? updated : p) }));
@@ -226,6 +250,7 @@ const App: React.FC = () => {
             <Home state={state} isAdmin={isAdmin} 
               onAddProduct={addProduct} 
               onUpdateProduct={updateProduct}
+              onDeleteProduct={deleteProduct}
               onAddCategory={addCategory}
               onUpdateCategories={updateCategories}
               onUpdateSettings={updateSettings}
@@ -283,7 +308,7 @@ const App: React.FC = () => {
   );
 };
 
-const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onUpdateProduct: any; onAddCategory: any; onUpdateCategories: any; onUpdateSettings: any; onUpdateBlog: any; onImportState: any; searchQuery: string; setSearchQuery: (s: string) => void }> = ({ state, isAdmin, searchQuery, setSearchQuery, ...props }) => {
+const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onUpdateProduct: any; onDeleteProduct: any; onAddCategory: any; onUpdateCategories: any; onUpdateSettings: any; onUpdateBlog: any; onImportState: any; searchQuery: string; setSearchQuery: (s: string) => void }> = ({ state, isAdmin, searchQuery, setSearchQuery, ...props }) => {
   const [selectedCat, setSelectedCat] = useState('All');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const navigate = useNavigate();
@@ -355,7 +380,7 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
 
       {filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {filteredProducts.map(p => <ProductCard key={p.id} product={p} isAdmin={isAdmin} showPrice={state.settings.features.showPrice} onEdit={() => {setEditingProduct(p); window.scrollTo(0,0);}} onViewBlog={id => navigate(`/blog/${id}`)} />)}
+          {filteredProducts.map(p => <ProductCard key={p.id} product={p} isAdmin={isAdmin} showPrice={state.settings.features.showPrice} onEdit={() => {setEditingProduct(p); window.scrollTo(0,0);}} onDelete={() => props.onDeleteProduct(p.id)} onViewBlog={id => navigate(`/blog/${id}`)} />)}
         </div>
       ) : (
         <div className="text-center py-24 px-10 bg-pink-50/50 backdrop-blur-md rounded-[5rem] border-4 border-dashed border-pink-100 shadow-2xl shadow-pink-100/30 group animate-in zoom-in-95 duration-1000">

@@ -1,26 +1,33 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Pastikan API Key tersedia
+const getAiInstance = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey || apiKey === "undefined") {
+    throw new Error("API_KEY_MISSING");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const generateProductContent = async (productName: string, category: string) => {
-  const prompt = `
-    Act as a professional affiliate marketer and storyteller for "Bynu's Recommendation".
-    User is uploading a product called "${productName}" in the category "${category}".
-    
-    Tugas kamu adalah membuat konten promosi yang menarik:
-    1. Short Description: Deskripsi singkat (maks 2 kalimat) yang "catchy" untuk kartu produk.
-    2. Blog Post: Artikel blog yang persuasif tapi santai.
-    
-    TONE & STYLE:
-    - Gunakan Bahasa Indonesia yang santai, bubbly, ceria, dan TIDAK KAKU.
-    - Gunakan gaya bahasa anak muda/Gen Z yang estetik.
-    - Sesekali campurkan istilah English yang umum (Indoglish).
-
-    Return the response in JSON format.
-  `;
-
   try {
+    const ai = getAiInstance();
+    const prompt = `
+      Act as a professional affiliate marketer and storyteller for "Bynu's Recommendation".
+      User is uploading a product called "${productName}" in the category "${category}".
+      
+      Tugas kamu adalah membuat konten promosi yang menarik:
+      1. Short Description: Deskripsi singkat (maks 2 kalimat) yang "catchy" untuk kartu produk.
+      2. Blog Post: Artikel blog yang persuasif tapi santai.
+      
+      TONE & STYLE:
+      - Gunakan Bahasa Indonesia yang santai, bubbly, ceria, dan TIDAK KAKU.
+      - Gunakan gaya bahasa anak muda/Gen Z yang estetik (Indoglish).
+
+      Return the response in JSON format.
+    `;
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ parts: [{ text: prompt }] }],
@@ -39,36 +46,39 @@ export const generateProductContent = async (productName: string, category: stri
       },
     });
     return JSON.parse(response.text || "{}");
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "API_KEY_MISSING") throw new Error("API Key belum diset di Vercel, Babe! ✨");
     console.error("AI Error:", error);
     return { shortDescription: "Produk gemes!", blogTitle: "Wajib Punya!", blogExcerpt: "Cek yuk!", blogContent: "Bagus banget!" };
   }
 };
 
 export const askAiAssistant = async (userRequest: string, currentState: any) => {
-  const prompt = `
-    ROLE: SYSTEM ARCHITECT (DATA MODE)
-    You are the technical backend of Bynu's website. You do NOT just talk; you EXECUTE data changes.
-    
-    USER REQUEST: "${userRequest}"
-    
-    CURRENT SITE STATE:
-    - Site Name: ${currentState.settings.siteName}
-    - Primary Color: ${currentState.settings.primaryColor}
-    - Categories: ${JSON.stringify(currentState.categories)}
-
-    INSTRUCTIONS:
-    1. If the request is about categories (adding, changing), return ALL resulting categories in "categoryUpdate".
-    2. If it's about colors, return new "primaryColor" or "backgroundColor".
-    3. If it's about site name, return "siteName".
-    4. Keep "textResponse" bubbly, short, and confirming what you changed.
-    
-    IMPORTANT: You must ALWAYS return a valid JSON.
-  `;
-
   try {
+    const ai = getAiInstance();
+    const prompt = `
+      ROLE: SYSTEM ARCHITECT (INTELLIGENT MODE)
+      You are the technical backend of Bynu's website. You process user requests even with typos.
+      
+      USER REQUEST: "${userRequest}" (Note: Handle typos like 'aketgori' -> 'category', 'warna' -> 'color', etc.)
+      
+      CURRENT SITE STATE:
+      - Site Name: ${currentState.settings.siteName}
+      - Primary Color: ${currentState.settings.primaryColor}
+      - Categories: ${JSON.stringify(currentState.categories)}
+
+      INSTRUCTIONS:
+      1. Interpret the user's intent. If they say "tambahkan aketgori", they mean "add category".
+      2. If adding categories, return the NEW FULL ARRAY of categories in "categoryUpdate".
+      3. If changing colors, return "primaryColor" or "backgroundColor".
+      4. If changing site name, return "siteName".
+      5. "textResponse" must be a bubbly confirmation of what you actually did.
+      
+      Return valid JSON only.
+    `;
+
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // Changed to flash for better stability in quick JSON responses
+      model: "gemini-3-flash-preview",
       contents: [{ parts: [{ text: prompt }] }],
       config: {
         responseMimeType: "application/json",
@@ -89,10 +99,10 @@ export const askAiAssistant = async (userRequest: string, currentState: any) => 
         }
       },
     });
-    const result = JSON.parse(response.text || "{}");
-    return result;
-  } catch (error) {
+    return JSON.parse(response.text || "{}");
+  } catch (error: any) {
+    if (error.message === "API_KEY_MISSING") throw new Error("API Key hilang! Cek Environment Variables ya. 🔑");
     console.error("Architect AI Error:", error);
-    throw new Error("Maaf Babe, AI lagi pusing. Coba cek API Key di Vercel atau perjelas perintahnya ya! ✨");
+    throw new Error("Gagal memproses perintah. Coba perjelas kalimatnya ya Babe! ✨");
   }
 };

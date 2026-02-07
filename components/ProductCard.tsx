@@ -7,20 +7,30 @@ interface ProductCardProps {
   isAdmin: boolean;
   showPrice: boolean;
   onEdit: () => void;
+  onDelete: () => void;
   onViewBlog: (productId: string) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, isAdmin, showPrice, onEdit, onViewBlog }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, isAdmin, showPrice, onEdit, onDelete, onViewBlog }) => {
   return (
     <div className="group bg-white rounded-[3rem] overflow-hidden border border-[#FFD6E0]/30 hover:shadow-[0_30px_60px_-15px_rgba(255,133,161,0.2)] transition-all duration-700 flex flex-col h-full transform hover:-translate-y-2 relative">
       {isAdmin && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#FF85A1] shadow-lg hover:scale-110 transition-transform active:scale-95"
-          title="Edit Product"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-        </button>
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-[#FF85A1] shadow-lg hover:scale-110 transition-transform active:scale-95"
+            title="Edit Product"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="w-10 h-10 bg-red-50/90 backdrop-blur rounded-full flex items-center justify-center text-red-500 shadow-lg hover:scale-110 transition-transform active:scale-95 border border-red-100"
+            title="Delete Product"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+        </div>
       )}
       
       <div className="relative aspect-[1/1] overflow-hidden">
