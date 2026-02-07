@@ -6,6 +6,7 @@ import AdminPanel from './components/AdminPanel';
 import ProductCard from './components/ProductCard';
 import SeoEngine from './components/SeoEngine';
 import { sendToTelegram } from './services/telegramService';
+import { fetchCloudState, saveCloudState } from './services/databaseService';
 
 const INITIAL_SETTINGS: SiteSettings = {
   logoUrl: '✨',
@@ -31,29 +32,14 @@ const INITIAL_SETTINGS: SiteSettings = {
 };
 
 const INITIAL_CATEGORIES = ['Tech ✨', 'Lifestyle 🌸', 'Fashion 👗', 'Home 🏠'];
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Kawaii Mechanical Keyboard',
-    description: 'Typing feels like clouds with these soft switches and pastel milk colors.',
-    price: '$129.00',
-    imageUrls: ['https://images.unsplash.com/photo-1595225476474-87563907a212?q=80&w=800&auto=format&fit=crop'],
-    affiliateLink: 'https://example.com',
-    category: 'Tech ✨',
-    createdAt: Date.now() - 100000
-  }
-];
 
-const INITIAL_BLOGS: BlogPost[] = [
-  {
-    id: 'b1',
-    productId: '1',
-    title: 'Your Desk Needs a Pastel Makeover! 🎀',
-    excerpt: 'Is your desk looking a bit gray? This keyboard is the sparkle you need.',
-    content: '# Typing in a Dreamland\n\nEver felt like your work is just... boring? It might be your tools! Switching to this mechanical keyboard changed everything for me.\n\n### Why it\'s a MUST-HAVE:\n- **The Sound**: It sounds like soft raindrops on a window.\n- **The Look**: It’s basically a piece of candy for your eyes.\n- **The Feel**: High quality build that lasts forever.\n\nTreat yourself to some sparkle today! ✨',
-    createdAt: Date.now() - 100000
-  }
-];
+// Data awal dibuat kosong agar tidak ada "hantu" produk lama yang muncul kembali
+const EMPTY_STATE: AppState = {
+  products: [],
+  blogs: [],
+  categories: INITIAL_CATEGORIES,
+  settings: INITIAL_SETTINGS
+};
 
 const Header: React.FC<{ isAdmin: boolean; onLogoClick: () => void; onLogout: () => void; settings: SiteSettings }> = ({ isAdmin, onLogoClick, onLogout, settings }) => (
   <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-pink-100/30">
@@ -111,32 +97,8 @@ const AdminPasswordModal: React.FC<{ isOpen: boolean; onClose: () => void; onSuc
   );
 };
 
-const MaintenanceScreen: React.FC<{ settings: SiteSettings; onSecretTrigger: () => void }> = ({ settings, onSecretTrigger }) => (
-  <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-10 text-center text-white overflow-hidden relative">
-    <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-pink-500 rounded-full blur-[120px] animate-pulse"></div>
-       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full blur-[150px] animate-pulse delay-1000"></div>
-    </div>
-    <button 
-      onClick={onSecretTrigger}
-      className="text-8xl mb-8 floating cursor-default hover:scale-110 transition-transform"
-    >
-      😴
-    </button>
-    <h1 className="text-5xl font-serif font-black mb-4 tracking-tight">Bynu is Dreaming...</h1>
-    <p className="text-slate-400 font-medium max-w-md mx-auto leading-relaxed">
-      Web lagi Bynu dekor ulang supaya makin estetik buat kamu! Cek lagi nanti ya, <span className="text-pink-400 font-bold">Babe! ✨</span>
-    </p>
-    <div className="mt-12 flex gap-4">
-      {settings.socialLinks?.telegram && (
-         <a href={settings.socialLinks.telegram} target="_blank" className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">Telegram</a>
-      )}
-    </div>
-  </div>
-);
-
 const SearchBar: React.FC<{ value: string; onChange: (v: string) => void; placeholder: string; primaryColor: string }> = ({ value, onChange, placeholder, primaryColor }) => (
-  <div className="relative max-w-2xl mx-auto mb-12 group">
+  <div className="relative max-w-2xl mx-auto mb-6 group">
     <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
       <svg className="w-5 h-5 text-slate-400 group-focus-within:text-pink-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -159,56 +121,54 @@ const SearchBar: React.FC<{ value: string; onChange: (v: string) => void; placeh
 );
 
 const App: React.FC = () => {
-  const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('bynu_site_state_v3');
-    return saved ? JSON.parse(saved) : {
-      products: INITIAL_PRODUCTS,
-      blogs: INITIAL_BLOGS,
-      categories: INITIAL_CATEGORIES,
-      settings: INITIAL_SETTINGS
-    };
-  });
-
+  const [state, setState] = useState<AppState>(EMPTY_STATE);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [clickCount, setClickCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 1. Load data dari Cloud saat pertama kali website dibuka
   useEffect(() => {
-    localStorage.setItem('bynu_site_state_v3', JSON.stringify(state));
-    document.body.style.backgroundColor = state.settings.backgroundColor;
-    
-    const existingStyle = document.getElementById('bynu-custom-css');
-    if (existingStyle) existingStyle.remove();
-    if (state.settings.customCss) {
-      const styleEl = document.createElement('style');
-      styleEl.id = 'bynu-custom-css';
-      styleEl.innerHTML = state.settings.customCss;
-      document.head.appendChild(styleEl);
-    }
-  }, [state]);
+    const init = async () => {
+      const cloudData = await fetchCloudState();
+      if (cloudData) {
+        setState(cloudData);
+      } else {
+        // Fallback ke local storage hanya jika cloud tidak tersedia
+        const saved = localStorage.getItem('bynu_site_state_v4');
+        if (saved) setState(JSON.parse(saved));
+      }
+      setIsLoading(false);
+    };
+    init();
+  }, []);
 
-  if (state.settings.maintenanceMode && !isAdmin) {
+  // 2. Simpan data ke Cloud hanya jika admin melakukan perubahan
+  useEffect(() => {
+    if (!isLoading) {
+      // Selalu simpan ke local sebagai cache
+      localStorage.setItem('bynu_site_state_v4', JSON.stringify(state));
+      // Jika user adalah admin, push perubahan ke database cloud agar dilihat semua orang
+      if (isAdmin) {
+        saveCloudState(state);
+      }
+      document.body.style.backgroundColor = state.settings.backgroundColor;
+    }
+  }, [state, isAdmin, isLoading]);
+
+  if (isLoading) {
     return (
-      <>
-        <MaintenanceScreen settings={state.settings} onSecretTrigger={() => setClickCount(c => c+1)} />
-        {clickCount >= 5 && (
-          <AdminPasswordModal 
-            isOpen={true} 
-            onClose={() => setClickCount(0)} 
-            requiredPass={state.settings.ownerPassword || "090401"}
-            onSuccess={() => { setIsAdmin(true); setClickCount(0); }} 
-          />
-        )}
-      </>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFFDF9]">
+        <div className="text-5xl animate-bounce mb-4">🍓</div>
+        <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">Menyusun Rak Bynu...</p>
+      </div>
     );
   }
 
   const addProduct = (product: Product, blogContent: { title: string, content: string, excerpt: string }) => {
     const newBlog: BlogPost = { id: crypto.randomUUID(), productId: product.id, title: blogContent.title, content: blogContent.content, excerpt: blogContent.excerpt, createdAt: Date.now() };
     setState(prev => ({ ...prev, products: [product, ...prev.products], blogs: [newBlog, ...prev.blogs] }));
-    
     const blogUrl = `${window.location.origin}${window.location.pathname}#/blog/${product.id}`;
-    // Call permanent service (locked token & chatid)
     sendToTelegram(product, blogUrl);
   };
 
@@ -257,25 +217,7 @@ const App: React.FC = () => {
         <footer className="bg-white border-t border-slate-50 py-20 mt-32 text-center">
           <div className="text-3xl font-black mb-4">{state.settings.siteName}</div>
           <p className="text-slate-400 font-medium mb-12">Handpicking happiness, one item at a time. 🌸</p>
-          
-          <div className="flex flex-wrap justify-center gap-4 mb-12 -mt-6">
-            {state.settings.socialLinks?.telegram && (
-              <a href={state.settings.socialLinks.telegram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md">
-                <span className="text-sm font-bold" style={{ color: state.settings.primaryColor }}>Join Telegram Bynu ✨</span>
-              </a>
-            )}
-            {state.settings.socialLinks?.instagram && (
-              <a href={state.settings.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md">
-                <span className="text-sm font-bold" style={{ color: state.settings.primaryColor }}>Instagram 📸</span>
-              </a>
-            )}
-            {state.settings.socialLinks?.whatsapp && (
-              <a href={state.settings.socialLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-all border border-slate-100 group shadow-sm hover:shadow-md">
-                <span className="text-sm font-bold" style={{ color: state.settings.primaryColor }}>WhatsApp 💬</span>
-              </a>
-            )}
-          </div>
-          <div className="text-slate-300 text-[10px] font-black uppercase tracking-widest">© 2024 BYNU'S RECOMMENDATION</div>
+          <div className="text-slate-300 text-[10px] font-black uppercase tracking-widest">© 2024 BYNU'S RECOMMENDATION - GLOBAL DB ENABLED</div>
         </footer>
       </div>
     </HashRouter>
@@ -310,7 +252,21 @@ const Home: React.FC<{ state: AppState; isAdmin: boolean; onAddProduct: any; onU
         <h1 className="text-6xl md:text-8xl font-black text-slate-900 mb-8 leading-[1.1]">
           {state.settings.heroTitle.split(' ').slice(0, -1).join(' ')} <span style={{ color: state.settings.primaryColor }} className="italic">{state.settings.heroTitle.split(' ').pop()}</span>
         </h1>
-        <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">{state.settings.heroSubtitle}</p>
+        <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-8">{state.settings.heroSubtitle}</p>
+        
+        {/* TELEGRAM BUTTON - MOVED ABOVE SEARCH BAR & COLORED PINK */}
+        <div className="flex justify-center mb-8">
+          <a 
+            href={state.settings.socialLinks?.telegram} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-white font-black text-sm uppercase tracking-widest hover:scale-110 transition-all shadow-xl"
+            style={{ backgroundColor: state.settings.primaryColor, boxShadow: `0 10px 25px -5px ${state.settings.primaryColor}40` }}
+          >
+            Join Telegram Bynu 📢✨
+          </a>
+        </div>
+
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Cari produk atau intip diary Bynu... ✨" primaryColor={state.settings.primaryColor} />
       </section>
 
@@ -427,7 +383,14 @@ const BlogView: React.FC<{ blogs: BlogPost[]; products: Product[]; settings: Sit
       <h1 className="text-4xl md:text-6xl font-black mb-8 leading-tight text-center">{blog.title}</h1>
       
       <article className="prose max-w-none mb-16 text-slate-600 leading-relaxed text-lg bg-white p-10 md:p-16 rounded-[3.5rem] shadow-sm border border-slate-50">
-        {blog.content.split('\n').map((l, i) => <p key={i} className="mb-6">{l.replace(/#|\*|###/g, '')}</p>)}
+        {blog.content.split('\n').map((l, i) => {
+          const line = l.trim();
+          if (line.startsWith('###')) return <h3 key={i} className="text-2xl font-black text-slate-900 mt-10 mb-4">{line.replace('###', '')}</h3>;
+          if (line.startsWith('##')) return <h2 key={i} className="text-3xl font-black text-slate-900 mt-12 mb-6">{line.replace('##', '')}</h2>;
+          if (line.startsWith('#')) return <h1 key={i} className="text-4xl font-black text-slate-900 mt-14 mb-8">{line.replace('#', '')}</h1>;
+          if (line === '') return <br key={i} />;
+          return <p key={i} className="mb-6">{line.replace(/\*|#/g, '')}</p>;
+        })}
       </article>
 
       <div className="rounded-[3rem] p-8 md:p-16 text-white text-center shadow-2xl sticky bottom-10" style={{ backgroundColor: settings.primaryColor }}>
