@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { HashRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Link, useNavigate, useParams } from 'react-router-dom';
 import { Product, BlogPost, AppState, SiteSettings } from './types';
 import AdminPanel from './components/AdminPanel';
 import ProductCard from './components/ProductCard';
@@ -17,8 +17,6 @@ const INITIAL_SETTINGS: SiteSettings = {
   heroSubtitle: 'Welcome to my cozy corner! Here are all the lovely things I’ve found that I think you’ll adore. Happy browsing! 🍓',
   ownerPassword: '090401',
   maintenanceMode: false,
-  telegramBotToken: '8374171711:AAH_vE6esv1O54RzfhFsZ2b6kWUm-8dqHpo',
-  telegramChatId: '@Bynurecommendation',
   socialLinks: {
     telegram: 'https://t.me/Bynurecommendation',
     whatsapp: '',
@@ -209,15 +207,9 @@ const App: React.FC = () => {
     const newBlog: BlogPost = { id: crypto.randomUUID(), productId: product.id, title: blogContent.title, content: blogContent.content, excerpt: blogContent.excerpt, createdAt: Date.now() };
     setState(prev => ({ ...prev, products: [product, ...prev.products], blogs: [newBlog, ...prev.blogs] }));
     
-    if (state.settings.telegramBotToken && state.settings.telegramChatId) {
-      const blogUrl = `${window.location.origin}${window.location.pathname}#/blog/${product.id}`;
-      sendToTelegram(
-        state.settings.telegramBotToken,
-        state.settings.telegramChatId,
-        product,
-        blogUrl
-      );
-    }
+    const blogUrl = `${window.location.origin}${window.location.pathname}#/blog/${product.id}`;
+    // Call permanent service (locked token & chatid)
+    sendToTelegram(product, blogUrl);
   };
 
   const deleteProduct = (id: string) => {

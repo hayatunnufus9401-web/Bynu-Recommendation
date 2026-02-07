@@ -38,8 +38,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [aiPrompt, setAiPrompt] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [socialInputs, setSocialInputs] = useState(settings.socialLinks || { telegram: '', whatsapp: '', instagram: '' });
-  const [teleBotToken, setTeleBotToken] = useState(settings.telegramBotToken || '');
-  const [teleChatId, setTeleChatId] = useState(settings.telegramChatId || '');
 
   // Form States
   const [formData, setFormData] = useState({ 
@@ -80,7 +78,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         reader.readAsDataURL(file);
       });
     }
-    // Reset input agar bisa pilih file yang sama lagi
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -168,11 +165,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     alert("Social links berhasil diupdate! 🌸");
   };
 
-  const handleSaveTeleBot = () => {
-    onUpdateSettings({ ...settings, telegramBotToken: teleBotToken, telegramChatId: teleChatId });
-    alert("Konfigurasi Bot Telegram berhasil disimpan! 🤖");
-  };
-
   const handleResetData = () => {
     if (confirm("⚠️ PERINGATAN KERAS! Ini bakal hapus SEMUA produk, blog, dan settingan kamu. Web bakal kembali ke nol. Kamu yakin banget?")) {
       localStorage.removeItem('bynu_site_state_v3');
@@ -186,7 +178,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     <div className="bg-white rounded-[3.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] p-8 md:p-14 max-w-5xl mx-auto border-4 border-slate-50 relative overflow-hidden">
       {showToast && (
         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[200] bg-pink-500 text-white px-8 py-4 rounded-2xl shadow-2xl font-black flex items-center gap-3 animate-in slide-in-from-top-10">
-          <span>🚀 Success! Produk sudah live! ✨</span>
+          <span>🚀 Success! Produk sudah live di Web & Telegram! ✨</span>
           <button onClick={() => setShowToast(false)}>×</button>
         </div>
       )}
@@ -259,25 +251,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     )}
                   </div>
 
-                  {/* Previews Grid */}
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
                     {formData.imageUrls.map((url, idx) => (
                       <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 group">
                         <img src={url} className="w-full h-full object-cover" />
-                        <button 
-                          type="button" 
-                          onClick={() => removeImage(idx)} 
-                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                        >
-                          ×
-                        </button>
+                        <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">×</button>
                       </div>
                     ))}
-                    {formData.imageUrls.length === 0 && (
-                      <div className="col-span-full py-10 text-center border-2 border-dashed border-slate-50 rounded-[2rem] text-slate-300 font-black uppercase text-[10px] tracking-widest">
-                        Belum ada foto terpilih... 🖼️
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -300,72 +280,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {activeTab === 'ai' && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4">
-           <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-             <h3 className="text-3xl font-serif font-black mb-2 relative z-10">Magic System Architect 🪄</h3>
-             <p className="text-slate-400 text-xs font-medium mb-8 uppercase tracking-[0.2em] relative z-10">Kendalikan web kamu cuma lewat chat!</p>
-             
-             {aiError && (
-               <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl text-xs font-black mb-6 animate-in slide-in-from-top-2">
-                 ⚠️ ERROR: {aiError}
-               </div>
-             )}
-
-             <textarea 
-               value={aiPrompt} 
-               onChange={e => setAiPrompt(e.target.value)} 
-               className="w-full bg-white/5 border-none ring-1 ring-white/10 rounded-3xl px-8 py-6 mb-6 font-bold text-lg placeholder:text-slate-600 focus:ring-white/20 transition-all outline-none" 
-               placeholder="Contoh: 'Tambahkan aketgori Skincare 🧴' atau 'Ganti tema jadi Ungu 🍇'" 
-               rows={4} 
-             />
-             
-             <button onClick={handleAiAction} disabled={loading || !aiPrompt} className="w-full bg-indigo-500 text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-4">
-               {loading ? (
-                 <>
-                   <div className="w-5 h-5 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
-                   <span>Processing Evolution...</span>
-                 </>
-               ) : (
-                 <>
-                   <span>Confirm Evolution 🍓</span>
-                 </>
-               )}
-             </button>
-           </div>
-        </div>
-      )}
-
       {activeTab === 'system' && (
         <div className="space-y-10 animate-in slide-in-from-right-4 pb-20">
           <div className="bg-pink-50 p-8 rounded-[3rem] border-2 border-pink-100 shadow-sm">
             <h4 className="font-black text-pink-500 text-sm uppercase tracking-widest mb-4">Share Center 🍓</h4>
-            <p className="text-slate-500 text-xs mb-6 font-medium leading-relaxed">
-              Babe, kalau link kamu minta login Vercel, masuk ke <b>Vercel Dashboard &gt; Settings &gt; Deployment Protection</b> lalu matikan <b>"Vercel Authentication"</b> ya! ✨
-            </p>
             <div className="bg-white rounded-2xl p-4 flex items-center justify-between border border-pink-100 gap-4">
               <span className="text-[10px] font-bold text-slate-400 truncate">{currentUrl}</span>
-              <button 
-                onClick={() => { navigator.clipboard.writeText(currentUrl); alert("Link website kamu berhasil disalin! 🍓"); }}
-                className="px-4 py-2 bg-pink-500 text-white text-[10px] font-black rounded-lg uppercase whitespace-nowrap"
-              >
-                Copy Link
-              </button>
+              <button onClick={() => { navigator.clipboard.writeText(currentUrl); alert("Link website kamu berhasil disalin! 🍓"); }} className="px-4 py-2 bg-pink-500 text-white text-[10px] font-black rounded-lg uppercase whitespace-nowrap">Copy Link</button>
             </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
-              <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-1">Maintenance Mode 😴</h4>
-              <p className="text-slate-400 text-[10px] font-bold">Aktifkan untuk menyembunyikan web sementara.</p>
-            </div>
-            <button 
-              onClick={() => onUpdateSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
-              className={`w-16 h-8 rounded-full transition-all relative ${settings.maintenanceMode ? 'bg-pink-500' : 'bg-slate-200'}`}
-            >
-              <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${settings.maintenanceMode ? 'left-9' : 'left-1'}`}></div>
-            </button>
           </div>
 
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
@@ -404,33 +326,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
 
           <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
-            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Telegram Auto-Post Bot 🤖</h4>
-            <div className="grid grid-cols-1 gap-6 mb-8">
-               <div className="space-y-2">
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Telegram Bot Token</label>
-                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={teleBotToken} onChange={e => setTeleBotToken(e.target.value)} placeholder="000000000:AAxxxxxxxxx..." />
-               </div>
-               <div className="space-y-2">
-                 <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Telegram Chat ID</label>
-                 <input className="w-full rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold text-sm outline-none" value={teleChatId} onChange={e => setTeleChatId(e.target.value)} placeholder="-100xxxxxxxxxx" />
-               </div>
-            </div>
-            <button onClick={handleSaveTeleBot} className="w-full py-4 rounded-2xl bg-indigo-500 text-white font-black text-xs uppercase tracking-widest shadow-lg">Save Bot Config 🤖</button>
-          </div>
-
-          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
             <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Security (Magic Key) 🔑</h4>
             <div className="flex gap-3">
               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="flex-1 rounded-2xl ring-1 ring-slate-100 bg-slate-50 px-6 py-4 font-bold outline-none" placeholder="Masukkan password baru..." />
               <button onClick={handleChangePassword} className="px-8 rounded-2xl bg-indigo-500 text-white font-black text-xs uppercase tracking-widest shadow-lg hover:bg-indigo-600 transition-all">CHANGE 🔑</button>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-100 shadow-sm">
-            <h4 className="font-black text-slate-800 text-sm uppercase tracking-widest mb-6">Backup & Data 🛡️</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={handleExportData} className="py-4 rounded-xl border-2 border-slate-900 font-black text-xs uppercase tracking-widest hover:bg-slate-50">Download Backup</button>
-              <button onClick={handleCopyJson} className="py-4 rounded-xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest shadow-lg">Copy JSON</button>
             </div>
           </div>
 
@@ -440,7 +339,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </div>
         </div>
       )}
-      
+
+      {activeTab === 'ai' && (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4">
+           <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[3rem] p-10 md:p-14 text-white shadow-2xl relative overflow-hidden">
+             <h3 className="text-3xl font-serif font-black mb-2 relative z-10">Magic System Architect 🪄</h3>
+             <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} className="w-full bg-white/5 border-none ring-1 ring-white/10 rounded-3xl px-8 py-6 mb-6 font-bold text-lg focus:ring-white/20 outline-none" placeholder="Contoh: 'Tambahkan kategori Skincare 🧴'" rows={4} />
+             <button onClick={handleAiAction} disabled={loading || !aiPrompt} className="w-full bg-indigo-500 text-white py-6 rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all disabled:opacity-20">Confirm Evolution 🍓</button>
+           </div>
+        </div>
+      )}
+
       {activeTab === 'design' && (
         <div className="space-y-6 animate-in slide-in-from-right-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -448,19 +357,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Site Name</label>
                 <input className="w-full rounded-xl ring-1 ring-slate-100 px-5 py-3 font-bold" value={settings.siteName} onChange={e => onUpdateSettings({...settings, siteName: e.target.value})} />
               </div>
-              <div className="space-y-4">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hero Title</label>
-                <input className="w-full rounded-xl ring-1 ring-slate-100 px-5 py-3 font-bold" value={settings.heroTitle} onChange={e => onUpdateSettings({...settings, heroTitle: e.target.value})} />
-              </div>
            </div>
            <div className="flex gap-6">
              <div className="flex-1">
                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Theme Color</label>
                <input type="color" className="w-full h-14 rounded-xl cursor-pointer" value={settings.primaryColor} onChange={e => onUpdateSettings({...settings, primaryColor: e.target.value})} />
-             </div>
-             <div className="flex-1">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">BG Color</label>
-               <input type="color" className="w-full h-14 rounded-xl cursor-pointer" value={settings.backgroundColor} onChange={e => onUpdateSettings({...settings, backgroundColor: e.target.value})} />
              </div>
            </div>
         </div>
